@@ -28,7 +28,7 @@ from .models import (
     Group, GroupMember, GroupExpense,
 )
 
-# ⭐ Utils & ML & SMS  — ITHU THAAN MISSING-A IRUNDHADHU!
+# ⭐ Utils & ML & SMS
 from .utils import (
     predict_category,
     generate_insights,
@@ -157,46 +157,29 @@ def dashboard(request):
     avg_per_day = round(spent_month / days_elapsed, 2) if days_elapsed else 0
     expense_count = qs.filter(date__gte=month_start).count()
 
-    # ⭐ AI Insights
     insights = generate_insights(user, qs, today)
-
-    # ⭐ Heatmap
     heatmap = build_heatmap(qs, today)
 
-    # ⭐ Savings Goals
     goals = SavingsGoal.objects.filter(user=user)
     active_goals = [g for g in goals if not g.is_achieved][:3]
 
-    # ⭐ Budget SMS alert check
     if budget and budget_amount > 0:
         try:
             check_budget_alerts(user, spent_month, budget_amount, CURRENCY_SYMBOLS.get('INR', '₹'))
         except Exception:
             pass
 
-    # ⭐ Money Personality
     personality = analyze_personality(user, qs, today)
 
     context = {
-        'totals': totals,
-        'top_category': top_category,
-        'avg_per_day': avg_per_day,
-        'expense_count': expense_count,
-        'recent_expenses': qs[:6],
-        'category_labels': category_labels,
-        'category_values': category_values,
-        'category_colors': category_colors,
-        'trend_labels': trend_labels,
-        'trend_values': trend_values,
-        'budget_amount': budget_amount,
-        'budget_left': budget_left,
-        'budget_percent': budget_percent,
-        'has_budget': bool(budget),
-        'today': today,
-        'insights': insights,
-        'heatmap': heatmap,
-        'active_goals': active_goals,
-        'personality': personality,
+        'totals': totals, 'top_category': top_category, 'avg_per_day': avg_per_day,
+        'expense_count': expense_count, 'recent_expenses': qs[:6],
+        'category_labels': category_labels, 'category_values': category_values,
+        'category_colors': category_colors, 'trend_labels': trend_labels,
+        'trend_values': trend_values, 'budget_amount': budget_amount,
+        'budget_left': budget_left, 'budget_percent': budget_percent,
+        'has_budget': bool(budget), 'today': today, 'insights': insights,
+        'heatmap': heatmap, 'active_goals': active_goals, 'personality': personality,
     }
     return render(request, 'expenses/dashboard.html', context)
 
@@ -219,17 +202,12 @@ def expense_list(request):
     params.pop('page', None)
 
     context = {
-        'page_obj': page_obj,
-        'total': total,
-        'count': count,
-        'period': period,
-        'categories': CATEGORY_CHOICES,
-        'querystring': params.urlencode(),
+        'page_obj': page_obj, 'total': total, 'count': count, 'period': period,
+        'categories': CATEGORY_CHOICES, 'querystring': params.urlencode(),
         'current_category': request.GET.get('category', ''),
         'current_q': request.GET.get('q', ''),
         'current_sort': request.GET.get('sort', '-date'),
-        'start': request.GET.get('start', ''),
-        'end': request.GET.get('end', ''),
+        'start': request.GET.get('start', ''), 'end': request.GET.get('end', ''),
     }
     return render(request, 'expenses/expense_list.html', context)
 
@@ -246,15 +224,14 @@ def expense_create(request):
             expense.save()
             messages.success(request, f'Expense added under "{expense.category}" ✅')
             return redirect('expense_list')
+        
+        print("FORM ERRORS:", form.errors)
         messages.error(request, 'Please correct the errors below.')
     else:
         form = ExpenseForm(initial={'date': timezone.localdate()})
 
     return render(request, 'expenses/expense_form.html', {
-        'form': form,
-        'title': 'Add Expense',
-        'subtitle': 'Log a new spending entry',
-        'is_edit': False,
+        'form': form, 'title': 'Add Expense', 'subtitle': 'Log a new spending entry', 'is_edit': False,
     })
 
 
@@ -276,11 +253,7 @@ def expense_update(request, pk):
         form = ExpenseForm(instance=expense)
 
     return render(request, 'expenses/expense_form.html', {
-        'form': form,
-        'title': 'Edit Expense',
-        'subtitle': f'Updating "{expense.title}"',
-        'is_edit': True,
-        'expense': expense,
+        'form': form, 'title': 'Edit Expense', 'subtitle': f'Updating "{expense.title}"', 'is_edit': True, 'expense': expense,
     })
 
 
@@ -295,16 +268,14 @@ def expense_delete(request, pk):
 
 
 # ============================================================
-# API — Category Prediction (ML + Keyword)
+# API
 # ============================================================
 @login_required
 def predict_category_api(request):
     text = request.GET.get('q', '')
     category, confidence, method = smart_predict(text)
     return JsonResponse({
-        'category': category,
-        'confidence': confidence,
-        'method': method,
+        'category': category, 'confidence': confidence, 'method': method,
         'icon': CATEGORY_META.get(category, CATEGORY_META['Other'])['icon'],
         'color': CATEGORY_META.get(category, CATEGORY_META['Other'])['color'],
     })
@@ -318,6 +289,8 @@ def manage_budget(request):
     user = request.user
     today = timezone.localdate()
     month_start = today.replace(day=1)
+    
+    # FIXED: filter().first() use panni iruken, so no crash if empty
     budget = Budget.objects.filter(user=user, month=month_start).first()
 
     if request.method == 'POST':
@@ -329,6 +302,8 @@ def manage_budget(request):
             obj.save()
             messages.success(request, 'Monthly budget saved 🎯')
             return redirect('manage_budget')
+        else:
+            messages.error(request, 'Please fix the errors below.')
     else:
         form = BudgetForm(instance=budget)
 
@@ -355,13 +330,8 @@ def manage_budget(request):
         cursor = (cursor - timedelta(days=1)).replace(day=1)
 
     return render(request, 'expenses/budget.html', {
-        'form': form,
-        'budget': budget,
-        'spent': spent,
-        'remaining': remaining,
-        'percent': percent,
-        'month_name': month_start.strftime('%B %Y'),
-        'history': history,
+        'form': form, 'budget': budget, 'spent': spent, 'remaining': remaining,
+        'percent': percent, 'month_name': month_start.strftime('%B %Y'), 'history': history,
     })
 
 
@@ -372,16 +342,12 @@ def manage_budget(request):
 def goals_list(request):
     user = request.user
     goals = SavingsGoal.objects.filter(user=user)
-
     total_target = sum(g.target_amount for g in goals) if goals else Decimal('0')
     total_saved = sum(g.saved_amount for g in goals) if goals else Decimal('0')
     overall_pct = round(float(total_saved / total_target * 100), 1) if total_target > 0 else 0
 
     return render(request, 'expenses/goals_list.html', {
-        'goals': goals,
-        'total_target': total_target,
-        'total_saved': total_saved,
-        'overall_pct': overall_pct,
+        'goals': goals, 'total_target': total_target, 'total_saved': total_saved, 'overall_pct': overall_pct,
     })
 
 
@@ -401,23 +367,16 @@ def goal_create(request):
             return redirect('goals_list')
         messages.error(request, 'Please fix the errors.')
     else:
-        form = SavingsGoalForm(initial={
-            'saved_amount': 0,
-            'icon': 'bi-trophy-fill',
-            'color': '#6366f1',
-        })
+        form = SavingsGoalForm(initial={'saved_amount': 0, 'icon': 'bi-trophy-fill', 'color': '#6366f1'})
 
     return render(request, 'expenses/goal_form.html', {
-        'form': form,
-        'title': 'New Savings Goal',
-        'is_edit': False,
+        'form': form, 'title': 'New Savings Goal', 'is_edit': False,
     })
 
 
 @login_required
 def goal_update(request, pk):
     goal = get_object_or_404(SavingsGoal, pk=pk, user=request.user)
-
     if request.method == 'POST':
         form = SavingsGoalForm(request.POST, instance=goal)
         if form.is_valid():
@@ -428,10 +387,7 @@ def goal_update(request, pk):
         form = SavingsGoalForm(instance=goal)
 
     return render(request, 'expenses/goal_form.html', {
-        'form': form,
-        'title': 'Edit Goal',
-        'is_edit': True,
-        'goal': goal,
+        'form': form, 'title': 'Edit Goal', 'is_edit': True, 'goal': goal,
     })
 
 
@@ -473,9 +429,7 @@ def recurring_list(request):
     monthly_total = sum((r.monthly_equivalent for r in items if r.is_active), Decimal('0'))
 
     return render(request, 'expenses/recurring_list.html', {
-        'items': items,
-        'due_count': due_count,
-        'monthly_total': monthly_total,
+        'items': items, 'due_count': due_count, 'monthly_total': monthly_total,
     })
 
 
@@ -495,25 +449,18 @@ def recurring_create(request):
             return redirect('recurring_list')
     else:
         form = RecurringExpenseForm(initial={
-            'start_date': timezone.localdate(),
-            'next_due': timezone.localdate(),
-            'frequency': 'monthly',
-            'is_active': True,
-            'icon': 'bi-arrow-repeat',
-            'color': '#6366f1',
+            'start_date': timezone.localdate(), 'next_due': timezone.localdate(),
+            'frequency': 'monthly', 'is_active': True, 'icon': 'bi-arrow-repeat', 'color': '#6366f1',
         })
 
     return render(request, 'expenses/recurring_form.html', {
-        'form': form,
-        'title': 'New Recurring Expense',
-        'is_edit': False,
+        'form': form, 'title': 'New Recurring Expense', 'is_edit': False,
     })
 
 
 @login_required
 def recurring_update(request, pk):
     obj = get_object_or_404(RecurringExpense, pk=pk, user=request.user)
-
     if request.method == 'POST':
         form = RecurringExpenseForm(request.POST, instance=obj)
         if form.is_valid():
@@ -524,10 +471,7 @@ def recurring_update(request, pk):
         form = RecurringExpenseForm(instance=obj)
 
     return render(request, 'expenses/recurring_form.html', {
-        'form': form,
-        'title': 'Edit Recurring',
-        'is_edit': True,
-        'item': obj,
+        'form': form, 'title': 'Edit Recurring', 'is_edit': True, 'item': obj,
     })
 
 
@@ -546,13 +490,8 @@ def recurring_mark_paid(request, pk):
     obj = get_object_or_404(RecurringExpense, pk=pk, user=request.user)
     if request.method == 'POST':
         Expense.objects.create(
-            user=request.user,
-            title=obj.title,
-            amount=obj.amount,
-            currency='INR',
-            category=obj.category,
-            date=timezone.localdate(),
-            notes=f'Auto-added from recurring ({obj.frequency})',
+            user=request.user, title=obj.title, amount=obj.amount, currency='INR',
+            category=obj.category, date=timezone.localdate(), notes=f'Auto-added from recurring ({obj.frequency})',
         )
         obj.last_paid = timezone.localdate()
         obj.advance_next_due()
@@ -578,7 +517,6 @@ def recurring_toggle(request, pk):
 def split_list(request):
     user = request.user
     splits = SplitExpense.objects.filter(user=user).prefetch_related('participants')
-
     total_receivable = Decimal('0')
     total_payable = Decimal('0')
     for s in splits:
@@ -586,9 +524,7 @@ def split_list(request):
         total_payable += s.amount_to_pay
 
     return render(request, 'expenses/split_list.html', {
-        'splits': splits,
-        'total_receivable': total_receivable,
-        'total_payable': total_payable,
+        'splits': splits, 'total_receivable': total_receivable, 'total_payable': total_payable,
     })
 
 
@@ -613,17 +549,13 @@ def split_create(request):
         formset = SplitParticipantFormSet()
 
     return render(request, 'expenses/split_form.html', {
-        'form': form,
-        'formset': formset,
-        'title': 'New Split Expense',
-        'is_edit': False,
+        'form': form, 'formset': formset, 'title': 'New Split Expense', 'is_edit': False,
     })
 
 
 @login_required
 def split_update(request, pk):
     obj = get_object_or_404(SplitExpense, pk=pk, user=request.user)
-
     if request.method == 'POST':
         form = SplitExpenseForm(request.POST, instance=obj)
         formset = SplitParticipantFormSet(request.POST, instance=obj)
@@ -637,11 +569,7 @@ def split_update(request, pk):
         formset = SplitParticipantFormSet(instance=obj)
 
     return render(request, 'expenses/split_form.html', {
-        'form': form,
-        'formset': formset,
-        'title': 'Edit Split',
-        'is_edit': True,
-        'split': obj,
+        'form': form, 'formset': formset, 'title': 'Edit Split', 'is_edit': True, 'split': obj,
     })
 
 
@@ -649,8 +577,7 @@ def split_update(request, pk):
 def split_detail(request, pk):
     obj = get_object_or_404(SplitExpense, pk=pk, user=request.user)
     return render(request, 'expenses/split_detail.html', {
-        'split': obj,
-        'participants': obj.participants.all(),
+        'split': obj, 'participants': obj.participants.all(),
     })
 
 
@@ -705,9 +632,7 @@ def group_create(request):
         form = GroupForm(initial={'icon': 'bi-people-fill', 'color': '#6366f1'})
 
     return render(request, 'expenses/group_form.html', {
-        'form': form,
-        'title': 'New Group',
-        'is_edit': False,
+        'form': form, 'title': 'New Group', 'is_edit': False,
     })
 
 
@@ -727,19 +652,14 @@ def group_detail(request, pk):
     for m in members:
         paid = float(group.expenses.filter(paid_by=m.user).aggregate(t=Sum('amount'))['t'] or 0)
         member_totals.append({
-            'member': m,
-            'paid': paid,
+            'member': m, 'paid': paid,
             'share': total / group.member_count if group.member_count else 0,
             'pct': (paid / total * 100) if total else 0,
         })
 
     return render(request, 'expenses/group_detail.html', {
-        'group': group,
-        'membership': membership,
-        'members': members,
-        'expenses': expenses,
-        'member_totals': member_totals,
-        'total': total,
+        'group': group, 'membership': membership, 'members': members,
+        'expenses': expenses, 'member_totals': member_totals, 'total': total,
         'invite_form': GroupInviteForm(),
     })
 
@@ -763,8 +683,7 @@ def group_add_expense(request, pk):
         form = GroupExpenseForm(initial={'date': timezone.localdate()})
 
     return render(request, 'expenses/group_expense_form.html', {
-        'form': form,
-        'group': group,
+        'form': form, 'group': group,
     })
 
 
@@ -826,7 +745,6 @@ def group_delete(request, pk):
 @login_required
 def currency_settings(request):
     profile, _created = UserProfile.objects.get_or_create(user=request.user)
-
     if request.method == 'POST':
         form = UserProfileForm(request.POST, instance=profile)
         if form.is_valid():
@@ -837,17 +755,13 @@ def currency_settings(request):
         form = UserProfileForm(instance=profile)
 
     return render(request, 'expenses/currency_settings.html', {
-        'form': form,
-        'profile': profile,
-        'rates': EXCHANGE_RATES_TO_INR,
-        'symbols': CURRENCY_SYMBOLS,
+        'form': form, 'profile': profile, 'rates': EXCHANGE_RATES_TO_INR, 'symbols': CURRENCY_SYMBOLS,
     })
 
 
 @login_required
 def sms_settings(request):
     profile, _created = UserProfile.objects.get_or_create(user=request.user)
-
     if request.method == 'POST':
         profile.phone_number = request.POST.get('phone_number', '').strip()
         profile.sms_alerts_enabled = 'sms_alerts_enabled' in request.POST
@@ -870,8 +784,7 @@ def sms_test(request):
 
     ok, info = send_sms(
         profile.phone_number,
-        f'✅ SpendWise test SMS — alerts working! '
-        f'Sent at {timezone.now().strftime("%I:%M %p")}.'
+        f'✅ SpendWise test SMS — alerts working! Sent at {timezone.now().strftime("%I:%M %p")}.'
     )
     if ok:
         messages.success(request, info)
@@ -897,7 +810,6 @@ def ml_train_view(request):
         return redirect('dashboard')
 
     info = model_info()
-
     if request.method == 'POST':
         result = train_model()
         if result['ok']:
@@ -928,10 +840,7 @@ def export_csv(request):
     writer.writerow(['Date', 'Description', 'Category', 'Amount', 'Currency', 'Amount (INR)', 'Notes'])
 
     for e in qs:
-        writer.writerow([
-            e.date.strftime('%d-%m-%Y'), e.title, e.category,
-            e.amount, e.currency, e.amount_in_inr, e.notes or ''
-        ])
+        writer.writerow([e.date.strftime('%d-%m-%Y'), e.title, e.category, e.amount, e.currency, e.amount_in_inr, e.notes or ''])
 
     writer.writerow([])
     writer.writerow(['', '', 'TOTAL', '', '', _total(qs), ''])
@@ -953,32 +862,22 @@ def export_pdf(request):
     response['Content-Disposition'] = f'attachment; filename="report_{timezone.localdate()}.pdf"'
 
     doc = SimpleDocTemplate(
-        response, pagesize=A4,
-        leftMargin=16 * mm, rightMargin=16 * mm,
-        topMargin=16 * mm, bottomMargin=16 * mm,
+        response, pagesize=A4, leftMargin=16 * mm, rightMargin=16 * mm, topMargin=16 * mm, bottomMargin=16 * mm,
     )
-
     styles = getSampleStyleSheet()
-    title_style = ParagraphStyle('T', parent=styles['Title'], fontSize=22,
-                                 textColor=colors.HexColor('#4f46e5'))
-    sub_style = ParagraphStyle('S', parent=styles['Normal'], fontSize=10,
-                               textColor=colors.HexColor('#64748b'))
+    title_style = ParagraphStyle('T', parent=styles['Title'], fontSize=22, textColor=colors.HexColor('#4f46e5'))
+    sub_style = ParagraphStyle('S', parent=styles['Normal'], fontSize=10, textColor=colors.HexColor('#64748b'))
 
     elements = [
         Paragraph('Smart Expense Tracker', title_style),
         Paragraph(f'Report &nbsp;|&nbsp; User: <b>{request.user.username}</b>', sub_style),
-        Paragraph(f'{timezone.localdate().strftime("%d %b %Y")} &nbsp;|&nbsp; '
-                  f'Records: {qs.count()}', sub_style),
+        Paragraph(f'{timezone.localdate().strftime("%d %b %Y")} &nbsp;|&nbsp; Records: {qs.count()}', sub_style),
         Spacer(1, 12),
     ]
 
     data = [['#', 'Date', 'Description', 'Category', 'Amount (INR)']]
     for idx, e in enumerate(qs, start=1):
-        data.append([
-            str(idx), e.date.strftime('%d-%m-%Y'),
-            Paragraph(e.title[:55], styles['Normal']),
-            e.category, f'{e.amount_in_inr:,.2f}',
-        ])
+        data.append([str(idx), e.date.strftime('%d-%m-%Y'), Paragraph(e.title[:55], styles['Normal']), e.category, f'{e.amount_in_inr:,.2f}'])
 
     data.append(['', '', '', 'TOTAL', f'{_total(qs):,.2f}'])
 
@@ -1007,7 +906,7 @@ def export_excel(request):
         from openpyxl import Workbook
         from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
     except ImportError:
-        messages.error(request, 'openpyxl not installed. Run: pip install openpyxl')
+        messages.error(request, 'openpyxl not installed.')
         return redirect('expense_list')
 
     qs = Expense.objects.filter(user=request.user)
@@ -1021,14 +920,8 @@ def export_excel(request):
     title_fill = PatternFill('solid', fgColor='4F46E5')
     header_font = Font(bold=True, color='FFFFFF')
     header_fill = PatternFill('solid', fgColor='6366F1')
-    total_fill = PatternFill('solid', fgColor='E0E7FF')
-    total_font = Font(bold=True, size=12)
-    border = Border(
-        left=Side(style='thin', color='CBD5E1'),
-        right=Side(style='thin', color='CBD5E1'),
-        top=Side(style='thin', color='CBD5E1'),
-        bottom=Side(style='thin', color='CBD5E1'),
-    )
+    border = Border(left=Side(style='thin', color='CBD5E1'), right=Side(style='thin', color='CBD5E1'),
+                    top=Side(style='thin', color='CBD5E1'), bottom=Side(style='thin', color='CBD5E1'))
 
     ws.merge_cells('A1:E1')
     ws['A1'] = 'Smart Expense Tracker — Report'
@@ -1060,16 +953,6 @@ def export_excel(request):
         amt.number_format = '₹#,##0.00'
         amt.border = border
 
-    total_row = qs.count() + 5
-    ws.cell(row=total_row, column=4, value='TOTAL').font = total_font
-    ws.cell(row=total_row, column=4).fill = total_fill
-    ws.cell(row=total_row, column=4).border = border
-    tc = ws.cell(row=total_row, column=5, value=float(_total(qs)))
-    tc.font = total_font
-    tc.fill = total_fill
-    tc.number_format = '₹#,##0.00'
-    tc.border = border
-
     for col, width in zip('ABCDE', [6, 14, 42, 18, 16]):
         ws.column_dimensions[col].width = width
 
@@ -1077,10 +960,7 @@ def export_excel(request):
     wb.save(buffer)
     buffer.seek(0)
 
-    response = HttpResponse(
-        buffer.read(),
-        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    )
+    response = HttpResponse(buffer.read(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     response['Content-Disposition'] = f'attachment; filename="expenses_{timezone.localdate()}.xlsx"'
     return response
 
@@ -1097,7 +977,6 @@ def send_summary_now(request):
 
     today = timezone.localdate()
     week_start = today - timedelta(days=7)
-
     qs = Expense.objects.filter(user=user, date__gte=week_start, date__lte=today)
     total = _total(qs)
     count = qs.count()
@@ -1109,7 +988,6 @@ def send_summary_now(request):
     body = f"""Hi {user.first_name or user.username},
 
 Weekly spending summary:
-
 📅 Period: {week_start} to {today}
 💸 Total Spent: ₹{total:,.2f}
 📊 Transactions: {count}

@@ -53,6 +53,12 @@ class SignUpForm(UserCreationForm):
 
 
 class ExpenseForm(forms.ModelForm):
+    # ⭐ FIX: Accept DD-MM-YYYY, YYYY-MM-DD, and DD/MM/YYYY formats
+    date = forms.DateField(
+        widget=forms.DateInput(attrs={'class': 'form-control form-control-lg', 'type': 'date', 'required': True}),
+        input_formats=['%Y-%m-%d', '%d-%m-%Y', '%d/%m/%Y']
+    )
+
     class Meta:
         model = Expense
         fields = ('title', 'amount', 'currency', 'category', 'date', 'notes', 'receipt')
@@ -60,18 +66,17 @@ class ExpenseForm(forms.ModelForm):
             'title': forms.TextInput(attrs={
                 'class': 'form-control form-control-lg',
                 'placeholder': 'e.g. Uber ride to office',
-                'id': 'id_title', 'autocomplete': 'off',
+                'id': 'id_title', 'autocomplete': 'off', 'required': True,
             }),
             'amount': forms.NumberInput(attrs={
                 'class': 'form-control form-control-lg',
-                'step': '0.01', 'min': '0.01', 'placeholder': '0.00',
+                'step': '0.01', 'min': '0.01', 'placeholder': '0.00', 'required': True,
             }),
             'currency': forms.Select(attrs={'class': 'form-select form-select-lg', 'id': 'id_currency'}),
             'category': forms.Select(attrs={'class': 'form-select form-select-lg', 'id': 'id_category'}),
-            'date': forms.DateInput(attrs={'class': 'form-control form-control-lg', 'type': 'date'}),
+            # 'date' is handled above
             'notes': forms.Textarea(attrs={
-                'class': 'form-control', 'rows': 3,
-                'placeholder': 'Optional notes',
+                'class': 'form-control', 'rows': 3, 'placeholder': 'Optional notes',
             }),
             'receipt': forms.ClearableFileInput(attrs={
                 'class': 'form-control', 'accept': 'image/*', 'id': 'id_receipt',
@@ -125,9 +130,6 @@ class SavingsGoalForm(forms.ModelForm):
         }
 
 
-# ============================================================
-# ⭐ NEW: RECURRING EXPENSE FORM
-# ============================================================
 class RecurringExpenseForm(forms.ModelForm):
     class Meta:
         model = RecurringExpense
@@ -145,9 +147,6 @@ class RecurringExpenseForm(forms.ModelForm):
         }
 
 
-# ============================================================
-# ⭐ NEW: SPLIT EXPENSE FORM
-# ============================================================
 class SplitExpenseForm(forms.ModelForm):
     class Meta:
         model = SplitExpense
@@ -167,32 +166,18 @@ class SplitParticipantForm(forms.ModelForm):
         model = SplitParticipant
         fields = ('name', 'share_amount', 'is_settled')
         widgets = {
-            'name': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Friend name',
-            }),
-            'share_amount': forms.NumberInput(attrs={
-                'class': 'form-control', 'step': '0.01', 'min': '0',
-                'placeholder': '0.00',
-            }),
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Friend name'}),
+            'share_amount': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'min': '0', 'placeholder': '0.00'}),
             'is_settled': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
 
 SplitParticipantFormSet = inlineformset_factory(
-    SplitExpense,
-    SplitParticipant,
-    form=SplitParticipantForm,
-    extra=2,
-    can_delete=True,
-    min_num=1,
-    validate_min=True,
+    SplitExpense, SplitParticipant, form=SplitParticipantForm,
+    extra=2, can_delete=True, min_num=1, validate_min=True,
 )
 
 
-# ============================================================
-# ⭐ NEW: USER PROFILE / CURRENCY SETTINGS
-# ============================================================
 class UserProfileForm(forms.ModelForm):
     class Meta:
         model = UserProfile
@@ -201,23 +186,15 @@ class UserProfileForm(forms.ModelForm):
             'preferred_currency': forms.Select(attrs={'class': 'form-select form-select-lg'}),
             'email_summary_enabled': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
-        
-# ============================================================
-# ⭐ NEW: GROUP / FAMILY FORMS
-# ============================================================
+
+
 class GroupForm(forms.ModelForm):
     class Meta:
         model = Group
         fields = ('name', 'description', 'icon', 'color')
         widgets = {
-            'name': forms.TextInput(attrs={
-                'class': 'form-control form-control-lg',
-                'placeholder': 'e.g. Sharma Family',
-            }),
-            'description': forms.Textarea(attrs={
-                'class': 'form-control', 'rows': 2,
-                'placeholder': 'Optional — what is this group for?',
-            }),
+            'name': forms.TextInput(attrs={'class': 'form-control form-control-lg', 'placeholder': 'e.g. Sharma Family'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Optional — what is this group for?'}),
             'icon': forms.HiddenInput(),
             'color': forms.HiddenInput(),
         }
@@ -228,33 +205,18 @@ class GroupExpenseForm(forms.ModelForm):
         model = GroupExpense
         fields = ('title', 'amount', 'category', 'date', 'notes')
         widgets = {
-            'title': forms.TextInput(attrs={
-                'class': 'form-control form-control-lg',
-                'placeholder': 'e.g. Groceries',
-            }),
-            'amount': forms.NumberInput(attrs={
-                'class': 'form-control form-control-lg',
-                'step': '0.01', 'min': '0.01',
-                'placeholder': '0.00',
-            }),
+            'title': forms.TextInput(attrs={'class': 'form-control form-control-lg', 'placeholder': 'e.g. Groceries'}),
+            'amount': forms.NumberInput(attrs={'class': 'form-control form-control-lg', 'step': '0.01', 'min': '0.01', 'placeholder': '0.00'}),
             'category': forms.Select(attrs={'class': 'form-select form-select-lg'}),
-            'date': forms.DateInput(attrs={
-                'class': 'form-control form-control-lg', 'type': 'date',
-            }),
-            'notes': forms.Textarea(attrs={
-                'class': 'form-control', 'rows': 2,
-                'placeholder': 'Optional',
-            }),
+            'date': forms.DateInput(attrs={'class': 'form-control form-control-lg', 'type': 'date'}),
+            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Optional'}),
         }
 
 
 class GroupInviteForm(forms.Form):
     username = forms.CharField(
         max_length=150,
-        widget=forms.TextInput(attrs={
-            'class': 'form-control form-control-lg',
-            'placeholder': 'Enter username to invite',
-        })
+        widget=forms.TextInput(attrs={'class': 'form-control form-control-lg', 'placeholder': 'Enter username to invite'})
     )
 
     def clean_username(self):
@@ -265,7 +227,3 @@ class GroupInviteForm(forms.Form):
             raise forms.ValidationError(f'No user found with username "{username}".')
         self.found_user = user
         return username
-
-
-# Update to add Group imports at top:
-# from .models import ... Group, GroupMember, GroupExpense
