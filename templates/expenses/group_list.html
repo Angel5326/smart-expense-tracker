@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Groups · {{ SITE_NAME }}{% endblock %}
+{% block page_title %}Family & Groups{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h5 class="mb-0">Your Groups ({{ groups|length }})</h5>
+  <a href="{% url 'group_create' %}" class="btn btn-gradient">
+    <i class="bi bi-plus-lg me-1"></i>New Group
+  </a>
+</div>
+
+{% if groups %}
+<div class="row g-3">
+  {% for g in groups %}
+  <div class="col-md-6 col-lg-4">
+    <a href="{% url 'group_detail' g.pk %}" class="panel split-card d-block"
+       style="border-top: 4px solid {{ g.color }}">
+      <div class="d-flex align-items-start gap-3 mb-3">
+        <span class="goal-icon" style="background: {{ g.color }}22; color: {{ g.color }}">
+          <i class="bi {{ g.icon }}"></i>
+        </span>
+        <div class="flex-grow-1">
+          <h6 class="mb-1 fw-bold">{{ g.name }}</h6>
+          <small class="text-muted">{{ g.member_count }} member{{ g.member_count|pluralize }}</small>
+        </div>
+      </div>
+
+      <div class="d-flex justify-content-between align-items-end">
+        <div>
+          <small class="text-muted d-block">Total Spent</small>
+          <strong style="color: {{ g.color }}; font-size: 1.25rem;">
+            {{ CURRENCY_SYMBOL }}{{ g.total_spent|floatformat:0|intcomma }}
+          </strong>
+        </div>
+        <i class="bi bi-arrow-right-circle" style="font-size: 1.4rem; color: {{ g.color }}"></i>
+      </div>
+    </a>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="panel">
+  <div class="empty-state py-5">
+    <i class="bi bi-people-fill"></i>
+    <h5>No groups yet</h5>
+    <p class="text-muted">Track shared expenses with family, roommates, or travel buddies.</p>
+    <a href="{% url 'group_create' %}" class="btn btn-gradient">
+      <i class="bi bi-plus-lg me-1"></i>Create First Group
+    </a>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

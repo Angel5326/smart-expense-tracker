@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% block title %}SMS Settings · {{ SITE_NAME }}{% endblock %}
+{% block page_title %}SMS Alerts{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-6">
+    <div class="panel">
+      <div class="panel-head">
+        <div>
+          <h5 class="mb-0">📱 SMS Alert Settings</h5>
+          <small class="text-muted">Get notified when you hit budget limits</small>
+        </div>
+      </div>
+
+      <form method="post">
+        {% csrf_token %}
+
+        <div class="mb-3">
+          <label class="form-label">Phone Number</label>
+          <div class="input-group input-group-lg">
+            <span class="input-group-text"><i class="bi bi-telephone-fill"></i></span>
+            <input type="tel" name="phone_number"
+                   value="{{ profile.phone_number }}"
+                   class="form-control"
+                   placeholder="+919876543210">
+          </div>
+          <div class="form-text">Include country code (e.g. +91 for India)</div>
+        </div>
+
+        <div class="form-check form-switch mb-3">
+          <input type="checkbox" name="sms_alerts_enabled"
+                 class="form-check-input" id="smsEnabled"
+                 {% if profile.sms_alerts_enabled %}checked{% endif %}>
+          <label class="form-check-label" for="smsEnabled">
+            Enable SMS alerts at 80% + 100% budget
+          </label>
+        </div>
+
+        <button type="submit" class="btn btn-gradient btn-lg w-100">
+          <i class="bi bi-check2-circle me-2"></i>Save Settings
+        </button>
+      </form>
+
+      <hr class="my-4">
+
+      <form method="post" action="{% url 'sms_test' %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline-primary w-100">
+          <i class="bi bi-send me-2"></i>Send Test SMS
+        </button>
+      </form>
+
+      <div class="alert alert-info small mt-3 mb-0">
+        <i class="bi bi-info-circle-fill me-1"></i>
+        Without Twilio config, SMS prints to <strong>server terminal</strong>
+        (dev mode). Configure in <code>settings.py</code> for real SMS.
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

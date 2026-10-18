@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block title %}Add Group Expense · {{ SITE_NAME }}{% endblock %}
+{% block page_title %}Add Expense to {{ group.name }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-6">
+    <div class="panel" style="border-top: 4px solid {{ group.color }}">
+      <div class="panel-head">
+        <div>
+          <h5 class="mb-0">{{ group.name }}</h5>
+          <small class="text-muted">Shared equally by {{ group.member_count }} member{{ group.member_count|pluralize }}</small>
+        </div>
+        <a href="{% url 'group_detail' group.pk %}" class="chip chip-link">
+          <i class="bi bi-arrow-left me-1"></i>Back
+        </a>
+      </div>
+
+      <form method="post">
+        {% csrf_token %}
+
+        <div class="mb-3">
+          <label class="form-label">Description *</label>
+          {{ form.title }}
+        </div>
+
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Amount *</label>
+            <div class="input-group input-group-lg">
+              <span class="input-group-text">{{ CURRENCY_SYMBOL }}</span>
+              {{ form.amount }}
+            </div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Date *</label>
+            {{ form.date }}
+          </div>
+        </div>
+
+        <div class="mb-3 mt-3">
+          <label class="form-label">Category</label>
+          {{ form.category }}
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Notes</label>
+          {{ form.notes }}
+        </div>
+
+        <div class="d-flex gap-2 mt-4">
+          <button type="submit" class="btn btn-gradient btn-lg flex-grow-1">
+            <i class="bi bi-check2-circle me-2"></i>Add Expense
+          </button>
+          <a href="{% url 'group_detail' group.pk %}" class="btn btn-outline-secondary btn-lg">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

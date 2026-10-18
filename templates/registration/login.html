@@ -1,0 +1,62 @@
+{% extends 'auth_base.html' %}
+{% block title %}Login · SpendWise{% endblock %}
+
+{% block content %}
+<div class="auth-header">
+  <h2 class="auth-title">Welcome back <span class="wave">👋</span></h2>
+  <p class="auth-sub">Sign in to continue tracking your expenses.</p>
+</div>
+
+{% if form.errors %}
+  <div class="alert alert-danger py-2 small auth-error">
+    <i class="bi bi-exclamation-triangle-fill me-1"></i>
+    Invalid username or password. Please try again.
+  </div>
+{% endif %}
+
+<form method="post" novalidate class="auth-form">
+  {% csrf_token %}
+
+  <div class="mb-3">
+    <label class="form-label" for="id_username">Username</label>
+    <div class="input-icon-wrap">
+      <i class="bi bi-person"></i>
+      <input type="text" name="username" id="id_username"
+             class="form-control form-control-lg"
+             placeholder="Enter your username" required autofocus
+             autocomplete="username">
+    </div>
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label" for="id_password">Password</label>
+    <div class="input-icon-wrap has-eye">
+      <i class="bi bi-lock"></i>
+      <input type="password" name="password" id="id_password"
+             class="form-control form-control-lg"
+             placeholder="Enter your password" required
+             autocomplete="current-password">
+      <button type="button"
+              class="eye-toggle"
+              data-target="#id_password"
+              data-field-name="password"
+              tabindex="-1"
+              aria-label="Toggle password visibility">
+        <i class="bi bi-eye"></i>
+      </button>
+    </div>
+  </div>
+
+  <input type="hidden" name="next" value="{{ next }}">
+
+  <button type="submit" class="btn btn-gradient btn-lg w-100 mt-3">
+    <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
+  </button>
+</form>
+
+<div class="auth-divider"><span>or</span></div>
+
+<p class="auth-switch">
+  New to SpendWise? <a href="{% url 'signup' %}">Create an account →</a>
+</p>
+{% endblock %}

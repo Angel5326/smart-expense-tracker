@@ -1,0 +1,258 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }} · {{ SITE_NAME }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+
+    <div class="panel">
+      <div class="panel-head">
+        <div>
+          <h5 class="mb-0">{{ title }}</h5>
+          <small class="text-muted">{{ subtitle }}</small>
+        </div>
+        <a href="{% url 'expense_list' %}" class="chip chip-link">
+          <i class="bi bi-arrow-left me-1"></i>Back
+        </a>
+      </div>
+
+      <form method="post" id="expenseForm" enctype="multipart/form-data"
+            data-predict-url="{% url 'predict_category_api' %}" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger py-2 small">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <!-- Description + Voice button -->
+        <div class="mb-3">
+          <label class="form-label" for="{{ form.title.id_for_label }}">
+            <i class="bi bi-card-text me-1"></i>Description
+          </label>
+          <div class="voice-wrap">
+            {{ form.title }}
+            <button type="button" class="voice-btn" id="voiceBtn" title="Voice input">
+              <i class="bi bi-mic-fill"></i>
+            </button>
+          </div>
+          <div id="voiceStatus" class="small text-muted mt-1 d-none">
+            <i class="bi bi-soundwave"></i> Listening... speak now!
+          </div>
+          <div id="predictBadge" class="predict-badge d-none"></div>
+          {% if form.title.errors %}
+            <div class="text-danger small mt-1">{{ form.title.errors|striptags }}</div>
+          {% endif %}
+        </div>
+
+        <div class="row g-3">
+          <!-- Amount -->
+          <div class="col-md-6">
+            <label class="form-label" for="{{ form.amount.id_for_label }}">
+              <i class="bi bi-currency-rupee me-1"></i>Amount
+            </label>
+            <div class="input-group input-group-lg">
+              <span class="input-group-text">{{ CURRENCY_SYMBOL }}</span>
+              {{ form.amount }}
+            </div>
+            {% if form.amount.errors %}
+              <div class="text-danger small mt-1">{{ form.amount.errors|striptags }}</div>
+            {% endif %}
+          </div>
+
+          <!-- Date -->
+          <div class="col-md-6">
+            <label class="form-label" for="{{ form.date.id_for_label }}">
+              <i class="bi bi-calendar-event me-1"></i>Date
+            </label>
+            {{ form.date }}
+            {% if form.date.errors %}
+              <div class="text-danger small mt-1">{{ form.date.errors|striptags }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Category -->
+        <div class="mb-3 mt-3">
+          <label class="form-label" for="{{ form.category.id_for_label }}">
+            <i class="bi bi-tags me-1"></i>Category
+          </label>
+          {{ form.category }}
+          <div class="form-text">
+            Empty-ah vittaa, description-la irundhu auto-detect aagum ✨
+          </div>
+        </div>
+
+        <!-- Notes -->
+        <div class="mb-3">
+          <label class="form-label" for="{{ form.notes.id_for_label }}">
+            <i class="bi bi-journal-text me-1"></i>Notes <span class="text-muted">(optional)</span>
+          </label>
+          {{ form.notes }}
+        </div>
+
+        <!-- ⭐ Receipt Upload -->
+        <div class="mb-3">
+          <label class="form-label" for="{{ form.receipt.id_for_label }}">
+            <i class="bi bi-receipt me-1"></i>Receipt <span class="text-muted">(optional)</span>
+          </label>
+          {{ form.receipt }}
+          <div class="form-text">{{ form.receipt.help_text }}</div>
+
+          <div id="receiptPreview" class="mt-2 d-none">
+            <img id="receiptImg" src="" alt="Receipt preview"
+                 style="max-width: 200px; max-height: 200px; border-radius: 12px; border: 2px solid var(--border)">
+          </div>
+
+          {% if is_edit and expense.receipt %}
+            <div class="mt-2">
+              <small class="text-muted d-block mb-1">Current receipt:</small>
+              <a href="{{ expense.receipt.url }}" target="_blank">
+                <img src="{{ expense.receipt.url }}" alt="Receipt"
+                     style="max-width: 150px; max-height: 150px; border-radius: 10px; border: 2px solid var(--border)">
+              </a>
+            </div>
+          {% endif %}
+        </div>
+
+        <div class="d-flex gap-2 mt-4">
+          <button type="submit" class="btn btn-gradient btn-lg flex-grow-1">
+            <i class="bi bi-check2-circle me-2"></i>
+            {% if is_edit %}Update Expense{% else %}Save Expense{% endif %}
+          </button>
+          <a href="{% url 'expense_list' %}" class="btn btn-outline-secondary btn-lg">Cancel</a>
+        </div>
+
+        {% if is_edit %}
+          <a href="{% url 'expense_delete' expense.pk %}" class="btn btn-link text-danger w-100 mt-3">
+            <i class="bi bi-trash3 me-1"></i>Delete this expense
+          </a>
+        {% endif %}
+      </form>
+    </div>
+
+    <!-- Quick amounts -->
+    <div class="panel mt-3">
+      <small class="text-muted d-block mb-2">Quick add amount:</small>
+      <div class="d-flex flex-wrap gap-2">
+        <button type="button" class="pill quick-amt" data-amt="50">₹50</button>
+        <button type="button" class="pill quick-amt" data-amt="100">₹100</button>
+        <button type="button" class="pill quick-amt" data-amt="200">₹200</button>
+        <button type="button" class="pill quick-amt" data-amt="500">₹500</button>
+        <button type="button" class="pill quick-amt" data-amt="1000">₹1,000</button>
+        <button type="button" class="pill quick-amt" data-amt="2000">₹2,000</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  /* ---------- VOICE INPUT ---------- */
+  const voiceBtn = document.getElementById('voiceBtn');
+  const titleInput = document.getElementById('id_title');
+  const amountInput = document.getElementById('id_amount');
+  const voiceStatus = document.getElementById('voiceStatus');
+
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  if (SR && voiceBtn) {
+    const recog = new SR();
+    recog.continuous = false;
+    recog.interimResults = false;
+    recog.lang = 'en-IN';
+
+    voiceBtn.addEventListener('click', function () {
+      try { recog.start(); } catch (e) {}
+    });
+
+    recog.onstart = function () {
+      voiceBtn.classList.add('listening');
+      voiceStatus.classList.remove('d-none');
+    };
+
+    recog.onend = function () {
+      voiceBtn.classList.remove('listening');
+      voiceStatus.classList.add('d-none');
+    };
+
+    recog.onerror = function (e) {
+      voiceBtn.classList.remove('listening');
+      voiceStatus.classList.add('d-none');
+      console.warn('[Voice] Error:', e.error);
+    };
+
+    recog.onresult = function (e) {
+      const transcript = e.results[0][0].transcript;
+      console.log('[Voice] Heard:', transcript);
+
+      // Smart parse: "500 rupees pizza" → amount 500, desc "pizza"
+      // OR "add 500 for pizza" → amount 500, desc "pizza"
+      const patterns = [
+        /(\d+(?:\.\d+)?)\s*(?:rupees|rs|for|on)?\s+(.+)/i,
+        /(?:add|spent)\s+(\d+(?:\.\d+)?)\s+(?:for|on)?\s*(.+)/i,
+        /(.+?)\s+(\d+(?:\.\d+)?)\s*(?:rupees|rs)?/i,
+      ];
+
+      let amount = null;
+      let desc = transcript;
+
+      for (const p of patterns) {
+        const m = transcript.match(p);
+        if (m) {
+          // Pattern 3 — text first, amount last
+          if (p.source.indexOf('.+?') === 0) {
+            desc = m[1].trim();
+            amount = parseFloat(m[2]);
+          } else {
+            amount = parseFloat(m[1]);
+            desc = m[2].trim();
+          }
+          break;
+        }
+      }
+
+      if (amount && titleInput && !titleInput.value) {
+        titleInput.value = desc;
+        titleInput.dispatchEvent(new Event('input', { bubbles: true }));
+      } else if (titleInput && !titleInput.value) {
+        titleInput.value = transcript;
+        titleInput.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+
+      if (amount && amountInput && !amountInput.value) {
+        amountInput.value = amount;
+      }
+    };
+  } else if (voiceBtn) {
+    voiceBtn.title = 'Voice input not supported in this browser';
+    voiceBtn.disabled = true;
+    voiceBtn.style.opacity = 0.4;
+  }
+
+  /* ---------- RECEIPT PREVIEW ---------- */
+  const receiptInput = document.getElementById('id_receipt');
+  const preview = document.getElementById('receiptPreview');
+  const img = document.getElementById('receiptImg');
+
+  if (receiptInput) {
+    receiptInput.addEventListener('change', function () {
+      const file = this.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          img.src = e.target.result;
+          preview.classList.remove('d-none');
+        };
+        reader.readAsDataURL(file);
+      } else {
+        preview.classList.add('d-none');
+      }
+    });
+  }
+})();
+</script>
+{% endblock %}

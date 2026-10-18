@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }} · {{ SITE_NAME }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-6">
+    <div class="panel">
+      <div class="panel-head">
+        <div>
+          <h5 class="mb-0">{{ title }}</h5>
+          <small class="text-muted">Track your savings progress</small>
+        </div>
+        <a href="{% url 'goals_list' %}" class="chip chip-link">
+          <i class="bi bi-arrow-left me-1"></i>Back
+        </a>
+      </div>
+
+      <form method="post">
+        {% csrf_token %}
+
+        <div class="mb-3">
+          <label class="form-label">Goal Name *</label>
+          {{ form.name }}
+          {% if form.name.errors %}<div class="text-danger small mt-1">{{ form.name.errors|striptags }}</div>{% endif %}
+        </div>
+
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Target Amount *</label>
+            <div class="input-group input-group-lg">
+              <span class="input-group-text">{{ CURRENCY_SYMBOL }}</span>
+              {{ form.target_amount }}
+            </div>
+            {% if form.target_amount.errors %}<div class="text-danger small mt-1">{{ form.target_amount.errors|striptags }}</div>{% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Already Saved</label>
+            <div class="input-group input-group-lg">
+              <span class="input-group-text">{{ CURRENCY_SYMBOL }}</span>
+              {{ form.saved_amount }}
+            </div>
+          </div>
+        </div>
+
+        <div class="mb-3 mt-3">
+          <label class="form-label">Target Date *</label>
+          {{ form.target_date }}
+          {% if form.target_date.errors %}<div class="text-danger small mt-1">{{ form.target_date.errors|striptags }}</div>{% endif %}
+        </div>
+
+        <!-- Icon picker -->
+        <div class="mb-3">
+          <label class="form-label">Choose Icon</label>
+          <div class="icon-picker">
+            {% for icon, label in "bi-trophy-fill,bi-phone,bi-laptop,bi-house,bi-car-front-fill,bi-airplane-fill,bi-bicycle,bi-gift-fill,bi-heart-fill,bi-camera-fill,bi-watch,bi-book-fill"|slice:":0" %}{% endfor %}
+            <button type="button" class="icon-pick" data-icon="bi-trophy-fill"><i class="bi bi-trophy-fill"></i></button>
+            <button type="button" class="icon-pick" data-icon="bi-phone"><i class="bi bi-phone"></i></button>
+            <button type="button" class="icon-pick" data-icon="bi-laptop"><i class="bi bi-laptop"></i></button>
+            <button type="button" class="icon-pick" data-icon="bi-house-fill"><i class="bi bi-house-fill"></i></button>
+            <button type="button" class="icon-pick" data-icon="bi-car-front-fill"><i class="bi bi-car-front-fill"></i></button>
+            <button type="button" class="icon-pick" data-icon="bi-airplane-fill"><i class="bi bi-airplane-fill"></i></button>
+            <button type="button" class="icon-pick" data-icon="bi-bicycle"><i class="bi bi-bicycle"></i></button>
+            <button type="button" class="icon-pick" data-icon="bi-gift-fill"><i class="bi bi-gift-fill"></i></button>
+            <button type="button" class="icon-pick" data-icon="bi-heart-fill"><i class="bi bi-heart-fill"></i></button>
+            <button type="button" class="icon-pick" data-icon="bi-camera-fill"><i class="bi bi-camera-fill"></i></button>
+          </div>
+        </div>
+
+        <!-- Color picker -->
+        <div class="mb-3">
+          <label class="form-label">Choose Color</label>
+          <div class="color-picker">
+            {% for c in "#6366f1,#8b5cf6,#ec4899,#ef4444,#f59e0b,#22c55e,#06b6d4,#3b82f6"|slice:":0" %}{% endfor %}
+            <button type="button" class="color-pick" data-color="#6366f1" style="background:#6366f1"></button>
+            <button type="button" class="color-pick" data-color="#8b5cf6" style="background:#8b5cf6"></button>
+            <button type="button" class="color-pick" data-color="#ec4899" style="background:#ec4899"></button>
+            <button type="button" class="color-pick" data-color="#ef4444" style="background:#ef4444"></button>
+            <button type="button" class="color-pick" data-color="#f59e0b" style="background:#f59e0b"></button>
+            <button type="button" class="color-pick" data-color="#22c55e" style="background:#22c55e"></button>
+            <button type="button" class="color-pick" data-color="#06b6d4" style="background:#06b6d4"></button>
+            <button type="button" class="color-pick" data-color="#3b82f6" style="background:#3b82f6"></button>
+          </div>
+        </div>
+
+        {{ form.icon }}
+        {{ form.color }}
+
+        <div class="d-flex gap-2 mt-4">
+          <button type="submit" class="btn btn-gradient btn-lg flex-grow-1">
+            <i class="bi bi-check2-circle me-2"></i>Save Goal
+          </button>
+          <a href="{% url 'goals_list' %}" class="btn btn-outline-secondary btn-lg">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  const iconInput = document.getElementById('id_icon');
+  const colorInput = document.getElementById('id_color');
+
+  document.querySelectorAll('.icon-pick').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      iconInput.value = btn.dataset.icon;
+      document.querySelectorAll('.icon-pick').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+
+  document.querySelectorAll('.color-pick').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      colorInput.value = btn.dataset.color;
+      document.querySelectorAll('.color-pick').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+
+  // Mark current selections
+  if (iconInput.value) {
+    const b = document.querySelector(`.icon-pick[data-icon="${iconInput.value}"]`);
+    if (b) b.classList.add('active');
+  }
+  if (colorInput.value) {
+    const b = document.querySelector(`.color-pick[data-color="${colorInput.value}"]`);
+    if (b) b.classList.add('active');
+  }
+})();
+</script>
+{% endblock %}

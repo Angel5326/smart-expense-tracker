@@ -1,0 +1,387 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Dashboard · {{ SITE_NAME }}{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+
+<!-- ---------- HERO ---------- -->
+<div class="hero-card mb-4">
+  <div>
+    <h2>Hello, {{ user.first_name|default:user.username }} 👋</h2>
+    <p class="mb-0 opacity-75">
+      {{ today|date:"l, d M Y" }} · You've logged
+      <strong>{{ expense_count }}</strong> expense{{ expense_count|pluralize }} this month.
+    </p>
+  </div>
+  <a href="{% url 'expense_create' %}" class="btn btn-light btn-lg fw-semibold hero-btn">
+    <i class="bi bi-plus-lg me-2"></i>Add Expense
+  </a>
+</div>
+
+<!-- ---------- STAT CARDS ---------- -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3">
+    <div class="stat-card grad-1">
+      <div class="stat-icon"><i class="bi bi-sun-fill"></i></div>
+      <span class="stat-label">Today</span>
+      <h3>{{ CURRENCY_SYMBOL }}{{ totals.today|floatformat:2|intcomma }}</h3>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card grad-2">
+      <div class="stat-icon"><i class="bi bi-calendar-week-fill"></i></div>
+      <span class="stat-label">This Week</span>
+      <h3>{{ CURRENCY_SYMBOL }}{{ totals.week|floatformat:2|intcomma }}</h3>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card grad-3">
+      <div class="stat-icon"><i class="bi bi-calendar-month-fill"></i></div>
+      <span class="stat-label">This Month</span>
+      <h3>{{ CURRENCY_SYMBOL }}{{ totals.month|floatformat:2|intcomma }}</h3>
+    </div>
+  </div>
+  <div class="col-6 col-lg-3">
+    <div class="stat-card grad-4">
+      <div class="stat-icon"><i class="bi bi-infinity"></i></div>
+      <span class="stat-label">All Time</span>
+      <h3>{{ CURRENCY_SYMBOL }}{{ totals.all|floatformat:2|intcomma }}</h3>
+    </div>
+  </div>
+</div>
+
+<!-- ---------- ⭐ AI INSIGHTS ---------- -->
+{% if insights %}
+<div class="mb-4">
+  <div class="d-flex align-items-center gap-2 mb-3">
+    <h5 class="mb-0 fw-bold"><i class="bi bi-stars text-warning me-2"></i>AI Insights</h5>
+    <span class="chip chip-primary">Auto-generated</span>
+  </div>
+  <div class="row g-3">
+    {% for insight in insights %}
+    <div class="col-md-6 col-lg-4">
+      <div class="insight-card" style="border-left-color: {{ insight.color }}">
+        <div class="insight-icon" style="background: {{ insight.color }}22; color: {{ insight.color }}">
+          <i class="bi {{ insight.icon }}"></i>
+        </div>
+        <div>
+          <strong class="d-block mb-1">{{ insight.title }}</strong>
+          <small class="text-muted">{{ insight.text|safe }}</small>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- ---------- ⭐ MONEY PERSONALITY ---------- -->
+{% if personality and personality.type != 'unknown' %}
+<div class="panel mb-4 personality-mini-card" style="border-left: 6px solid {{ personality.color }}">
+  <div class="d-flex align-items-center gap-3 flex-wrap">
+    <div class="personality-mini-emoji" style="background: {{ personality.color }}22;">
+      {{ personality.emoji }}
+    </div>
+    <div class="flex-grow-1">
+      <small class="text-muted d-block">Your Money Personality</small>
+      <h5 class="mb-0 fw-bold" style="color: {{ personality.color }}">
+        {{ personality.title }}
+      </h5>
+      <small class="text-muted">{{ personality.description|truncatechars:120 }}</small>
+    </div>
+    <a href="{% url 'personality' %}" class="btn btn-gradient btn-sm">
+      See Details <i class="bi bi-arrow-right ms-1"></i>
+    </a>
+  </div>
+</div>
+{% endif %}
+
+<!-- ---------- ⭐ EXPENSE HEATMAP ---------- -->
+<div class="panel mb-4">
+  <div class="panel-head">
+    <div>
+      <h5 class="mb-0">Spending Heatmap</h5>
+      <small class="text-muted">Last {{ heatmap.weeks|length }} weeks · darker = more spending</small>
+    </div>
+    <div class="heatmap-legend">
+      <span class="small text-muted me-1">Less</span>
+      <span class="heat-cell level-0"></span>
+      <span class="heat-cell level-1"></span>
+      <span class="heat-cell level-2"></span>
+      <span class="heat-cell level-3"></span>
+      <span class="heat-cell level-4"></span>
+      <span class="small text-muted ms-1">More</span>
+    </div>
+  </div>
+
+  <div class="heatmap-wrap">
+    <div class="heatmap-grid">
+      {% for week in heatmap.weeks %}
+        {% for day in week %}
+          {% if day %}
+            <div class="heat-cell level-{{ day.level }} {% if day.is_today %}is-today{% endif %}"
+                 title="{{ day.date|date:'d M Y' }} · ₹{{ day.amount|floatformat:0 }}"
+                 data-date="{{ day.date|date:'d M Y' }}"
+                 data-amount="{{ day.amount|floatformat:0 }}"></div>
+          {% else %}
+            <div class="heat-cell empty"></div>
+          {% endif %}
+        {% endfor %}
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- ---------- CHARTS ---------- -->
+<div class="row g-4 mb-4">
+  <div class="col-lg-8">
+    <div class="panel h-100">
+      <div class="panel-head">
+        <div>
+          <h5 class="mb-0">Spending Trend</h5>
+          <small class="text-muted">Last 7 days</small>
+        </div>
+        <span class="chip">Avg/day {{ CURRENCY_SYMBOL }}{{ avg_per_day|floatformat:2 }}</span>
+      </div>
+      <canvas id="trendChart" height="118"></canvas>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="panel h-100">
+      <div class="panel-head">
+        <div>
+          <h5 class="mb-0">By Category</h5>
+          <small class="text-muted">This month</small>
+        </div>
+      </div>
+      {% if category_values %}
+        <canvas id="catChart" height="220"></canvas>
+        <p class="text-center text-muted small mt-3 mb-0">
+          Top: <strong>{{ top_category }}</strong>
+        </p>
+      {% else %}
+        <div class="empty-state">
+          <i class="bi bi-pie-chart"></i>
+          <p>No data yet this month.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- ---------- BUDGET + GOALS + RECENT ---------- -->
+<div class="row g-4 mb-4">
+  <div class="col-lg-4">
+    <div class="panel h-100">
+      <div class="panel-head">
+        <h5 class="mb-0">Monthly Budget</h5>
+        <a href="{% url 'manage_budget' %}" class="chip chip-link">Manage</a>
+      </div>
+
+      {% if has_budget %}
+        <div class="ring-wrap">
+          <svg viewBox="0 0 120 120" class="ring">
+            <circle cx="60" cy="60" r="52" class="ring-bg"></circle>
+            <circle cx="60" cy="60" r="52" class="ring-fg"
+                    style="stroke-dasharray: 327; stroke-dashoffset: 327;"
+                    data-percent="{{ budget_percent }}"></circle>
+          </svg>
+          <div class="ring-center">
+            <strong>{{ budget_percent }}%</strong>
+            <small>used</small>
+          </div>
+        </div>
+
+        <div class="budget-rows">
+          <div><span>Budget</span><strong>{{ CURRENCY_SYMBOL }}{{ budget_amount|floatformat:2|intcomma }}</strong></div>
+          <div><span>Spent</span><strong class="text-danger">{{ CURRENCY_SYMBOL }}{{ totals.month|floatformat:2|intcomma }}</strong></div>
+          <div><span>Remaining</span>
+            <strong class="{% if budget_left < 0 %}text-danger{% else %}text-success{% endif %}">
+              {{ CURRENCY_SYMBOL }}{{ budget_left|floatformat:2|intcomma }}
+            </strong>
+          </div>
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <i class="bi bi-bullseye"></i>
+          <p>No budget set for this month.</p>
+          <a href="{% url 'manage_budget' %}" class="btn btn-gradient btn-sm">Set Budget</a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ⭐ SAVINGS GOALS preview -->
+  <div class="col-lg-4">
+    <div class="panel h-100">
+      <div class="panel-head">
+        <h5 class="mb-0">Savings Goals</h5>
+        <a href="{% url 'goals_list' %}" class="chip chip-link">View all</a>
+      </div>
+
+      {% if active_goals %}
+        {% for goal in active_goals %}
+        <div class="goal-mini mb-3">
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <span class="goal-mini-icon" style="background: {{ goal.color }}22; color: {{ goal.color }}">
+              <i class="bi {{ goal.icon }}"></i>
+            </span>
+            <div class="flex-grow-1">
+              <strong class="d-block">{{ goal.name|truncatechars:22 }}</strong>
+              <small class="text-muted">
+                ₹{{ goal.saved_amount|floatformat:0|intcomma }} / ₹{{ goal.target_amount|floatformat:0|intcomma }}
+              </small>
+            </div>
+            <strong style="color: {{ goal.color }}">{{ goal.progress_percent }}%</strong>
+          </div>
+          <div class="app-progress sm">
+            <div class="progress-bar" style="width: {{ goal.progress_percent }}%; background: {{ goal.color }}"></div>
+          </div>
+          <small class="text-muted d-block mt-1">
+            {% if goal.days_left > 0 %}
+              {{ goal.days_left }} days left · Save ₹{{ goal.daily_target|floatformat:0 }}/day
+            {% elif goal.is_overdue %}
+              <span class="text-danger">Overdue by {{ goal.days_left|cut:"-" }} days</span>
+            {% endif %}
+          </small>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty-state">
+          <i class="bi bi-trophy"></i>
+          <p>No active goals.</p>
+          <a href="{% url 'goal_create' %}" class="btn btn-gradient btn-sm">Create Goal</a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="panel h-100">
+      <div class="panel-head">
+        <h5 class="mb-0">Recent</h5>
+        <a href="{% url 'expense_list' %}" class="chip chip-link">View all</a>
+      </div>
+
+      {% if recent_expenses %}
+        <ul class="txn-list">
+          {% for e in recent_expenses %}
+          <li class="txn-item">
+            <span class="txn-icon" style="background: {{ e.color }}22; color: {{ e.color }}">
+              <i class="bi {{ e.icon }}"></i>
+            </span>
+            <div class="txn-info">
+              <strong>{{ e.title|truncatechars:20 }}</strong>
+              <small>{{ e.category }} · {{ e.date|date:"d M" }}</small>
+            </div>
+            <span class="txn-amount">-{{ CURRENCY_SYMBOL }}{{ e.amount|floatformat:0 }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <div class="empty-state">
+          <i class="bi bi-inbox"></i>
+          <p>No expenses yet.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{{ category_labels|json_script:"catLabels" }}
+{{ category_values|json_script:"catValues" }}
+{{ category_colors|json_script:"catColors" }}
+{{ trend_labels|json_script:"trendLabels" }}
+{{ trend_values|json_script:"trendValues" }}
+{% endblock %}
+
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+  const get = id => JSON.parse(document.getElementById(id).textContent);
+  const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+  const gridColor = isDark ? 'rgba(255,255,255,.08)' : 'rgba(15,23,42,.06)';
+  const tickColor = isDark ? '#94a3b8' : '#64748b';
+
+  Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
+  Chart.defaults.color = tickColor;
+
+  // Trend line
+  const trendCtx = document.getElementById('trendChart');
+  if (trendCtx) {
+    const g = trendCtx.getContext('2d').createLinearGradient(0, 0, 0, 260);
+    g.addColorStop(0, 'rgba(99,102,241,.35)');
+    g.addColorStop(1, 'rgba(99,102,241,0)');
+
+    new Chart(trendCtx, {
+      type: 'line',
+      data: {
+        labels: get('trendLabels'),
+        datasets: [{
+          data: get('trendValues'),
+          borderColor: '#6366f1',
+          backgroundColor: g,
+          borderWidth: 3,
+          fill: true,
+          tension: .42,
+          pointRadius: 4,
+          pointBackgroundColor: '#fff',
+          pointBorderColor: '#6366f1',
+          pointBorderWidth: 2,
+          pointHoverRadius: 7,
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, grid: { color: gridColor }, border: { display: false } },
+          x: { grid: { display: false }, border: { display: false } }
+        }
+      }
+    });
+  }
+
+  // Category doughnut
+  const catCtx = document.getElementById('catChart');
+  if (catCtx) {
+    new Chart(catCtx, {
+      type: 'doughnut',
+      data: {
+        labels: get('catLabels'),
+        datasets: [{
+          data: get('catValues'),
+          backgroundColor: get('catColors'),
+          borderWidth: 3,
+          borderColor: isDark ? '#1e293b' : '#fff',
+          hoverOffset: 10,
+        }]
+      },
+      options: {
+        cutout: '66%',
+        plugins: {
+          legend: { position: 'bottom', labels: { boxWidth: 10, boxHeight: 10, padding: 12, usePointStyle: true } }
+        }
+      }
+    });
+  }
+
+  // Budget ring
+  const ring = document.querySelector('.ring-fg');
+  if (ring) {
+    const pct = parseFloat(ring.dataset.percent || 0);
+    const circumference = 2 * Math.PI * 52;
+    ring.style.strokeDasharray = circumference;
+    ring.style.strokeDashoffset = circumference;
+    ring.style.stroke = pct >= 100 ? '#ef4444' : (pct >= 80 ? '#f59e0b' : '#6366f1');
+    setTimeout(() => {
+      ring.style.strokeDashoffset = circumference - (circumference * Math.min(pct, 100) / 100);
+    }, 200);
+  }
+})();
+</script>
+{% endblock %}

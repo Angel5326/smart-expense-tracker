@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% block title %}Settings · {{ SITE_NAME }}{% endblock %}
+{% block page_title %}Preferences{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-6">
+    <div class="panel mb-3">
+      <div class="panel-head">
+        <div>
+          <h5 class="mb-0">💱 Currency & Email</h5>
+          <small class="text-muted">Manage your preferences</small>
+        </div>
+      </div>
+
+      <form method="post">
+        {% csrf_token %}
+
+        <div class="mb-3">
+          <label class="form-label">Preferred Currency</label>
+          {{ form.preferred_currency }}
+          <div class="form-text">Display currency for dashboard totals</div>
+        </div>
+
+        <div class="form-check form-switch mb-3">
+          {{ form.email_summary_enabled }}
+          <label class="form-check-label" for="{{ form.email_summary_enabled.id_for_label }}">
+            Receive weekly email summary
+          </label>
+        </div>
+
+        <button type="submit" class="btn btn-gradient btn-lg w-100">
+          <i class="bi bi-check2-circle me-2"></i>Save Preferences
+        </button>
+      </form>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <h5 class="mb-0">📊 Exchange Rates (to INR)</h5>
+        <span class="chip">Demo rates</span>
+      </div>
+      <ul class="rates-list">
+        {% for code, rate in rates.items %}
+        <li>
+          <span class="rate-code">{{ symbols|default_if_none:'' }}{{ code }}</span>
+          <span class="rate-symbol">{{ symbols|default_if_none:'' }}</span>
+          <span class="ms-auto fw-bold">1 {{ code }} = ₹{{ rate }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+      <small class="text-muted">* Hardcoded demo rates. Real app would use live API.</small>
+    </div>
+  </div>
+</div>
+{% endblock %}

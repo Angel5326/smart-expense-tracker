@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Savings Goals · {{ SITE_NAME }}{% endblock %}
+{% block page_title %}Savings Goals{% endblock %}
+
+{% block content %}
+
+<!-- Summary -->
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="stat-card grad-2">
+      <div class="stat-icon"><i class="bi bi-trophy-fill"></i></div>
+      <span class="stat-label">Total Target</span>
+      <h3>{{ CURRENCY_SYMBOL }}{{ total_target|floatformat:0|intcomma }}</h3>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="stat-card grad-4">
+      <div class="stat-icon"><i class="bi bi-piggy-bank-fill"></i></div>
+      <span class="stat-label">Total Saved</span>
+      <h3>{{ CURRENCY_SYMBOL }}{{ total_saved|floatformat:0|intcomma }}</h3>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="stat-card grad-1">
+      <div class="stat-icon"><i class="bi bi-graph-up-arrow"></i></div>
+      <span class="stat-label">Progress</span>
+      <h3>{{ overall_pct }}%</h3>
+    </div>
+  </div>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h5 class="mb-0">Your Goals ({{ goals|length }})</h5>
+  <a href="{% url 'goal_create' %}" class="btn btn-gradient">
+    <i class="bi bi-plus-lg me-1"></i>New Goal
+  </a>
+</div>
+
+{% if goals %}
+<div class="row g-3">
+  {% for goal in goals %}
+  <div class="col-md-6 col-lg-4">
+    <div class="panel goal-card" style="border-top: 4px solid {{ goal.color }}">
+      <div class="d-flex align-items-start gap-3 mb-3">
+        <span class="goal-icon" style="background: {{ goal.color }}22; color: {{ goal.color }}">
+          <i class="bi {{ goal.icon }}"></i>
+        </span>
+        <div class="flex-grow-1">
+          <h6 class="mb-1 fw-bold">{{ goal.name }}</h6>
+          <small class="text-muted">
+            {% if goal.is_achieved %}
+              <span class="text-success"><i class="bi bi-check-circle-fill"></i> Achieved!</span>
+            {% elif goal.is_overdue %}
+              <span class="text-danger"><i class="bi bi-exclamation-triangle-fill"></i> Overdue</span>
+            {% else %}
+              {{ goal.days_left }} days left
+            {% endif %}
+          </small>
+        </div>
+        <div class="dropdown">
+          <button class="btn btn-sm btn-link text-muted" data-bs-toggle="dropdown">
+            <i class="bi bi-three-dots-vertical"></i>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item" href="{% url 'goal_update' goal.pk %}"><i class="bi bi-pencil me-2"></i>Edit</a></li>
+            <li><a class="dropdown-item text-danger" href="{% url 'goal_delete' goal.pk %}"><i class="bi bi-trash me-2"></i>Delete</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <div class="d-flex justify-content-between mb-1">
+          <span class="fw-bold" style="color: {{ goal.color }}; font-size: 1.4rem;">
+            {{ CURRENCY_SYMBOL }}{{ goal.saved_amount|floatformat:0|intcomma }}
+          </span>
+          <span class="text-muted align-self-end">of {{ CURRENCY_SYMBOL }}{{ goal.target_amount|floatformat:0|intcomma }}</span>
+        </div>
+        <div class="app-progress">
+          <div class="progress-bar" style="width: {{ goal.progress_percent }}%; background: {{ goal.color }}"></div>
+        </div>
+        <div class="d-flex justify-content-between mt-1">
+          <small class="text-muted">{{ goal.progress_percent }}% complete</small>
+          <small class="text-muted">₹{{ goal.remaining|floatformat:0 }} to go</small>
+        </div>
+      </div>
+
+      {% if not goal.is_achieved and goal.days_left > 0 %}
+      <div class="alert alert-info py-2 small mb-2">
+        <i class="bi bi-lightbulb-fill"></i>
+        Save <strong>{{ CURRENCY_SYMBOL }}{{ goal.daily_target|floatformat:0 }}/day</strong> to reach on time
+      </div>
+      {% endif %}
+
+      {% if not goal.is_achieved %}
+      <form method="post" action="{% url 'goal_add_savings' goal.pk %}" class="d-flex gap-2 mt-2">
+        {% csrf_token %}
+        <input type="number" name="amount" step="0.01" min="1"
+               class="form-control form-control-sm"
+               placeholder="Add amount" required>
+        <button type="submit" class="btn btn-gradient btn-sm">
+          <i class="bi bi-plus-lg"></i>
+        </button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="panel">
+  <div class="empty-state py-5">
+    <i class="bi bi-trophy"></i>
+    <h5>No goals yet</h5>
+    <p class="text-muted">Set your first savings goal and start tracking progress!</p>
+    <a href="{% url 'goal_create' %}" class="btn btn-gradient">
+      <i class="bi bi-plus-lg me-1"></i>Create First Goal
+    </a>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

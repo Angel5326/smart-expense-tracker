@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}{{ split.title }} · {{ SITE_NAME }}{% endblock %}
+{% block page_title %}Split Detail{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="panel mb-3">
+      <div class="panel-head">
+        <div>
+          <h4 class="mb-1">{{ split.title }}</h4>
+          <small class="text-muted">
+            {{ split.date|date:"d M Y" }} · {{ split.category }} · {{ split.participants_count }} people
+          </small>
+        </div>
+        <div class="d-flex gap-2">
+          <a href="{% url 'split_update' split.pk %}" class="chip chip-link"><i class="bi bi-pencil"></i></a>
+          <a href="{% url 'split_delete' split.pk %}" class="chip chip-link text-danger"><i class="bi bi-trash"></i></a>
+        </div>
+      </div>
+
+      <div class="row g-3 mt-2">
+        <div class="col-md-4">
+          <div class="mini-stat">
+            <small>Total</small>
+            <strong>{{ CURRENCY_SYMBOL }}{{ split.total_amount|floatformat:2|intcomma }}</strong>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="mini-stat">
+            <small>Your share</small>
+            <strong class="text-primary">{{ CURRENCY_SYMBOL }}{{ split.my_share|floatformat:2|intcomma }}</strong>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="mini-stat">
+            <small>
+              {% if split.paid_by_me %}You'll receive{% else %}You owe{% endif %}
+            </small>
+            <strong class="{% if split.paid_by_me %}text-success{% else %}text-danger{% endif %}">
+              {{ CURRENCY_SYMBOL }}
+              {% if split.paid_by_me %}{{ split.amount_to_receive|floatformat:2|intcomma }}{% else %}{{ split.amount_to_pay|floatformat:2|intcomma }}{% endif %}
+            </strong>
+          </div>
+        </div>
+      </div>
+
+      {% if split.notes %}
+      <div class="mt-3 p-3 rounded-3" style="background: var(--surface-2)">
+        <small class="text-muted d-block mb-1">Notes</small>
+        {{ split.notes }}
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <h5 class="mb-0">👥 Participants</h5>
+        <span class="chip">{{ participants|length }} people</span>
+      </div>
+
+      <ul class="txn-list">
+        {% for p in participants %}
+        <li class="txn-item">
+          <span class="txn-icon" style="background: {% if p.is_settled %}#22c55e22; color: #22c55e{% else %}#f59e0b22; color: #f59e0b{% endif %}">
+            <i class="bi {% if p.is_settled %}bi-check2-circle{% else %}bi-person-fill{% endif %}"></i>
+          </span>
+          <div class="txn-info">
+            <strong>{{ p.name }}</strong>
+            <small>
+              {% if p.is_settled %}
+                Settled on {{ p.settled_at|date:"d M Y" }}
+              {% else %}
+                Pending
+              {% endif %}
+            </small>
+          </div>
+          <div class="txn-right">
+            <span class="txn-amount">{{ CURRENCY_SYMBOL }}{{ p.share_amount|floatformat:2|intcomma }}</span>
+            {% if not p.is_settled %}
+              <form method="post" action="{% url 'split_settle' split.pk p.pk %}" style="display:inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-gradient" title="Mark settled">
+                  <i class="bi bi-check2"></i>
+                </button>
+              </form>
+            {% endif %}
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}

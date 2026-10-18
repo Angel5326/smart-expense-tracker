@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Recurring · {{ SITE_NAME }}{% endblock %}
+{% block page_title %}Recurring Expenses{% endblock %}
+
+{% block content %}
+
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="stat-card grad-2">
+      <div class="stat-icon"><i class="bi bi-arrow-repeat"></i></div>
+      <span class="stat-label">Active Subscriptions</span>
+      <h3>{{ items|length }}</h3>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="stat-card grad-1">
+      <div class="stat-icon"><i class="bi bi-exclamation-circle-fill"></i></div>
+      <span class="stat-label">Due Now</span>
+      <h3>{{ due_count }}</h3>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="stat-card grad-4">
+      <div class="stat-icon"><i class="bi bi-calendar-month-fill"></i></div>
+      <span class="stat-label">Monthly Cost</span>
+      <h3>{{ CURRENCY_SYMBOL }}{{ monthly_total|floatformat:0|intcomma }}</h3>
+    </div>
+  </div>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h5 class="mb-0">All Recurring ({{ items|length }})</h5>
+  <a href="{% url 'recurring_create' %}" class="btn btn-gradient">
+    <i class="bi bi-plus-lg me-1"></i>Add Recurring
+  </a>
+</div>
+
+{% if items %}
+<div class="row g-3">
+  {% for item in items %}
+  <div class="col-md-6 col-lg-4">
+    <div class="panel goal-card" style="border-top: 4px solid {{ item.color }}; {% if not item.is_active %}opacity:.6{% endif %}">
+      <div class="d-flex align-items-start gap-3 mb-3">
+        <span class="goal-icon" style="background: {{ item.color }}22; color: {{ item.color }}">
+          <i class="bi {{ item.icon }}"></i>
+        </span>
+        <div class="flex-grow-1">
+          <h6 class="mb-1 fw-bold">{{ item.title }}</h6>
+          <small class="text-muted text-capitalize">
+            {{ item.frequency }}
+            {% if item.last_paid %}· Last: {{ item.last_paid|date:"d M" }}{% endif %}
+          </small>
+        </div>
+        <div class="dropdown">
+          <button class="btn btn-sm btn-link text-muted" data-bs-toggle="dropdown">
+            <i class="bi bi-three-dots-vertical"></i>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item" href="{% url 'recurring_update' item.pk %}"><i class="bi bi-pencil me-2"></i>Edit</a></li>
+            <li>
+              <form method="post" action="{% url 'recurring_toggle' item.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="dropdown-item">
+                  <i class="bi bi-{% if item.is_active %}pause{% else %}play{% endif %}-fill me-2"></i>
+                  {% if item.is_active %}Pause{% else %}Activate{% endif %}
+                </button>
+              </form>
+            </li>
+            <li><a class="dropdown-item text-danger" href="{% url 'recurring_delete' item.pk %}"><i class="bi bi-trash me-2"></i>Delete</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="d-flex justify-content-between mb-2">
+        <span class="fw-bold" style="color: {{ item.color }}; font-size: 1.4rem;">
+          {{ CURRENCY_SYMBOL }}{{ item.amount|floatformat:0|intcomma }}
+        </span>
+        <span class="text-muted small align-self-end">per {{ item.frequency|slice:":-2" }}</span>
+      </div>
+
+      <div class="d-flex justify-content-between align-items-center">
+        <small class="text-muted">
+          Next: <strong>{{ item.next_due|date:"d M Y" }}</strong>
+        </small>
+        {% if item.is_due %}
+          <span class="badge bg-danger"><i class="bi bi-exclamation-triangle-fill me-1"></i>Due!</span>
+        {% elif item.days_until_due <= 3 %}
+          <span class="badge bg-warning text-dark">{{ item.days_until_due }} days</span>
+        {% else %}
+          <span class="badge bg-success">{{ item.days_until_due }} days</span>
+        {% endif %}
+      </div>
+
+      {% if item.is_due %}
+      <form method="post" action="{% url 'recurring_mark_paid' item.pk %}" class="mt-3">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-gradient w-100 btn-sm">
+          <i class="bi bi-check2-circle me-1"></i>Mark as Paid
+        </button>
+      </form>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="panel">
+  <div class="empty-state py-5">
+    <i class="bi bi-arrow-repeat"></i>
+    <h5>No recurring expenses yet</h5>
+    <p class="text-muted">Track your Netflix, gym, rent — anywhere money auto-leaves!</p>
+    <a href="{% url 'recurring_create' %}" class="btn btn-gradient">
+      <i class="bi bi-plus-lg me-1"></i>Create First
+    </a>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }} · {{ SITE_NAME }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-6">
+    <div class="panel">
+      <div class="panel-head">
+        <h5 class="mb-0">{{ title }}</h5>
+        <a href="{% url 'group_list' %}" class="chip chip-link">
+          <i class="bi bi-arrow-left me-1"></i>Back
+        </a>
+      </div>
+
+      <form method="post">
+        {% csrf_token %}
+
+        <div class="mb-3">
+          <label class="form-label">Group Name *</label>
+          {{ form.name }}
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Description</label>
+          {{ form.description }}
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Icon</label>
+          <div class="icon-picker">
+            <button type="button" class="icon-pick" data-icon="bi-people-fill"><i class="bi bi-people-fill"></i></button>
+            <button type="button" class="icon-pick" data-icon="bi-house-heart-fill"><i class="bi bi-house-heart-fill"></i></button>
+            <button type="button" class="icon-pick" data-icon="bi-airplane-fill"><i class="bi bi-airplane-fill"></i></button>
+            <button type="button" class="icon-pick" data-icon="bi-briefcase-fill"><i class="bi bi-briefcase-fill"></i></button>
+            <button type="button" class="icon-pick" data-icon="bi-cup-hot-fill"><i class="bi bi-cup-hot-fill"></i></button>
+            <button type="button" class="icon-pick" data-icon="bi-heart-fill"><i class="bi bi-heart-fill"></i></button>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Color</label>
+          <div class="color-picker">
+            <button type="button" class="color-pick" data-color="#6366f1" style="background:#6366f1"></button>
+            <button type="button" class="color-pick" data-color="#8b5cf6" style="background:#8b5cf6"></button>
+            <button type="button" class="color-pick" data-color="#ec4899" style="background:#ec4899"></button>
+            <button type="button" class="color-pick" data-color="#ef4444" style="background:#ef4444"></button>
+            <button type="button" class="color-pick" data-color="#f59e0b" style="background:#f59e0b"></button>
+            <button type="button" class="color-pick" data-color="#22c55e" style="background:#22c55e"></button>
+          </div>
+        </div>
+
+        {{ form.icon }}{{ form.color }}
+
+        <div class="d-flex gap-2 mt-4">
+          <button type="submit" class="btn btn-gradient btn-lg flex-grow-1">
+            <i class="bi bi-check2-circle me-2"></i>Create
+          </button>
+          <a href="{% url 'group_list' %}" class="btn btn-outline-secondary btn-lg">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  const iconInput = document.getElementById('id_icon');
+  const colorInput = document.getElementById('id_color');
+
+  document.querySelectorAll('.icon-pick').forEach(b => {
+    b.addEventListener('click', () => {
+      iconInput.value = b.dataset.icon;
+      document.querySelectorAll('.icon-pick').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+    });
+  });
+  document.querySelectorAll('.color-pick').forEach(b => {
+    b.addEventListener('click', () => {
+      colorInput.value = b.dataset.color;
+      document.querySelectorAll('.color-pick').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+    });
+  });
+
+  if (iconInput.value) {
+    const b = document.querySelector(`.icon-pick[data-icon="${iconInput.value}"]`);
+    if (b) b.classList.add('active');
+  }
+  if (colorInput.value) {
+    const b = document.querySelector(`.color-pick[data-color="${colorInput.value}"]`);
+    if (b) b.classList.add('active');
+  }
+})();
+</script>
+{% endblock %}

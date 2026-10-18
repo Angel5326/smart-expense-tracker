@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Splits · {{ SITE_NAME }}{% endblock %}
+{% block page_title %}Split Expenses{% endblock %}
+
+{% block content %}
+
+<div class="row g-3 mb-4">
+  <div class="col-md-6">
+    <div class="stat-card grad-4">
+      <div class="stat-icon"><i class="bi bi-arrow-down-left-circle-fill"></i></div>
+      <span class="stat-label">You'll Receive</span>
+      <h3>{{ CURRENCY_SYMBOL }}{{ total_receivable|floatformat:2|intcomma }}</h3>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="stat-card grad-1">
+      <div class="stat-icon"><i class="bi bi-arrow-up-right-circle-fill"></i></div>
+      <span class="stat-label">You Owe</span>
+      <h3>{{ CURRENCY_SYMBOL }}{{ total_payable|floatformat:2|intcomma }}</h3>
+    </div>
+  </div>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h5 class="mb-0">All Splits ({{ splits|length }})</h5>
+  <a href="{% url 'split_create' %}" class="btn btn-gradient">
+    <i class="bi bi-plus-lg me-1"></i>New Split
+  </a>
+</div>
+
+{% if splits %}
+<div class="row g-3">
+  {% for s in splits %}
+  <div class="col-md-6">
+    <a href="{% url 'split_detail' s.pk %}" class="panel d-block split-card">
+      <div class="d-flex justify-content-between align-items-start mb-2">
+        <div>
+          <h6 class="fw-bold mb-1">{{ s.title }}</h6>
+          <small class="text-muted">
+            {{ s.date|date:"d M Y" }} · {{ s.participants_count }} people
+          </small>
+        </div>
+        <span class="badge {% if s.paid_by_me %}bg-success{% else %}bg-warning text-dark{% endif %}">
+          {% if s.paid_by_me %}You paid{% else %}You owe{% endif %}
+        </span>
+      </div>
+
+      <div class="d-flex justify-content-between align-items-end">
+        <div>
+          <div class="text-muted small">Total</div>
+          <div class="fw-bold">{{ CURRENCY_SYMBOL }}{{ s.total_amount|floatformat:2|intcomma }}</div>
+        </div>
+        <div class="text-end">
+          <div class="text-muted small">Your share</div>
+          <div class="fw-bold text-primary">{{ CURRENCY_SYMBOL }}{{ s.my_share|floatformat:2|intcomma }}</div>
+        </div>
+      </div>
+    </a>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="panel">
+  <div class="empty-state py-5">
+    <i class="bi bi-people-fill"></i>
+    <h5>No split expenses yet</h5>
+    <p class="text-muted">Split bills with friends — track who owes whom!</p>
+    <a href="{% url 'split_create' %}" class="btn btn-gradient">
+      <i class="bi bi-plus-lg me-1"></i>Create First Split
+    </a>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

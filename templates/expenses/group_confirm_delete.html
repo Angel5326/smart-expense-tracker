@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}Delete Group · {{ SITE_NAME }}{% endblock %}
+{% block page_title %}Delete Group{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-5">
+    <div class="panel text-center">
+      <div class="danger-icon mb-3"><i class="bi bi-exclamation-triangle-fill"></i></div>
+      <h4>Delete "{{ group.name }}"?</h4>
+      <p class="text-muted">All members and shared expenses will be removed permanently.</p>
+
+      <form method="post" class="d-flex gap-2 mt-4">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger btn-lg flex-grow-1">
+          <i class="bi bi-trash3 me-2"></i>Yes, Delete
+        </button>
+        <a href="{% url 'group_detail' group.pk %}" class="btn btn-outline-secondary btn-lg">Cancel</a>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

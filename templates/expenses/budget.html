@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Budget · {{ SITE_NAME }}{% endblock %}
+{% block page_title %}Monthly Budget{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+  <div class="col-lg-5">
+    <div class="panel">
+      <div class="panel-head">
+        <div>
+          <h5 class="mb-0">Set Budget</h5>
+          <small class="text-muted">{{ month_name }}</small>
+        </div>
+        <i class="bi bi-bullseye fs-4 text-primary"></i>
+      </div>
+
+      <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+          <label class="form-label">Budget Amount</label>
+          <div class="input-group input-group-lg">
+            <span class="input-group-text">{{ CURRENCY_SYMBOL }}</span>
+            {{ form.amount }}
+          </div>
+          {% if form.amount.errors %}
+            <div class="text-danger small mt-1">{{ form.amount.errors|striptags }}</div>
+          {% endif %}
+        </div>
+        <button class="btn btn-gradient btn-lg w-100">
+          <i class="bi bi-save me-2"></i>Save Budget
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div class="col-lg-7">
+    <div class="panel">
+      <div class="panel-head">
+        <h5 class="mb-0">This Month</h5>
+        <span class="chip">{{ month_name }}</span>
+      </div>
+
+      <div class="progress-stack mb-3">
+        <div class="d-flex justify-content-between mb-1">
+          <span>Spent {{ CURRENCY_SYMBOL }}{{ spent|floatformat:2|intcomma }}</span>
+          <span class="text-muted">of {{ CURRENCY_SYMBOL }}{{ budget.amount|default:0|floatformat:2|intcomma }}</span>
+        </div>
+        <div class="progress app-progress">
+          <div class="progress-bar {% if percent >= 100 %}bg-danger{% elif percent >= 80 %}bg-warning{% else %}bg-primary{% endif %}"
+               style="width: {{ percent }}%"></div>
+        </div>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-6">
+          <div class="mini-stat">
+            <small>Remaining</small>
+            <strong class="{% if remaining < 0 %}text-danger{% else %}text-success{% endif %}">
+              {{ CURRENCY_SYMBOL }}{{ remaining|floatformat:2|intcomma }}
+            </strong>
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="mini-stat">
+            <small>Used</small>
+            <strong>{{ percent }}%</strong>
+          </div>
+        </div>
+      </div>
+
+      <hr class="my-4">
+      <h6 class="mb-3">Last 6 Months</h6>
+      <ul class="history-list">
+        {% for h in history %}
+        <li>
+          <span>{{ h.month }}</span>
+          <div class="flex-grow-1 mx-3">
+            <div class="progress app-progress sm">
+              <div class="progress-bar {% if h.percent >= 100 %}bg-danger{% elif h.percent >= 80 %}bg-warning{% else %}bg-primary{% endif %}"
+                   style="width: {{ h.percent }}%"></div>
+            </div>
+          </div>
+          <span class="fw-semibold">{{ CURRENCY_SYMBOL }}{{ h.spent|floatformat:0|intcomma }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}

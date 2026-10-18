@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}ML Training · {{ SITE_NAME }}{% endblock %}
+{% block page_title %}ML Category Trainer{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-7">
+    <div class="panel mb-3">
+      <div class="panel-head">
+        <div>
+          <h5 class="mb-0">🧠 Machine Learning Model</h5>
+          <small class="text-muted">Naive Bayes classifier on your expense data</small>
+        </div>
+      </div>
+
+      {% if info.exists %}
+        <div class="alert alert-success">
+          <i class="bi bi-check-circle-fill me-2"></i>
+          <strong>Model trained!</strong><br>
+          Size: {{ info.size|filesizeformat }} · Last trained: {{ info.modified|date:"d M Y H:i" }}
+        </div>
+      {% else %}
+        <div class="alert alert-warning">
+          <i class="bi bi-exclamation-triangle-fill me-2"></i>
+          <strong>No model yet.</strong> Train it below.
+        </div>
+      {% endif %}
+
+      <div class="alert alert-info small">
+        <i class="bi bi-info-circle-fill me-2"></i>
+        <strong>How it works:</strong> The model learns patterns from your past
+        expenses (title → category). After training, predictions improve as you
+        add more data. Needs at least <strong>20 labeled expenses</strong>
+        across multiple categories.
+      </div>
+
+      <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-gradient btn-lg w-100">
+          <i class="bi bi-lightning-charge-fill me-2"></i>Train Now
+        </button>
+      </form>
+    </div>
+
+    <div class="panel">
+      <h6 class="mb-3">🎯 How Predictions Work</h6>
+      <ol class="small text-muted">
+        <li>You type an expense description</li>
+        <li>System tries ML prediction first</li>
+        <li>If ML confidence &lt; 40%, falls back to keyword matching</li>
+        <li>Best result shown in the badge</li>
+      </ol>
+    </div>
+  </div>
+</div>
+{% endblock %}
